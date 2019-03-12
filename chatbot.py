@@ -4,12 +4,12 @@ import requests
 
 app = Flask(__name__)
 
-PAT = ''
+PAT = 'EAAElanWHWs0BAGrlESwCtGH6C4ZAtfGtINDVPgcWiuUQo3ZAeY0O7H4ic1b1lPmVgcmqpjYPxom0V80cZBD4K5tvdaiwQB3dnFVUvZAgJQlSo1rLEmxHH8Ojuq1LAkoyM300upWo9HZAlRNO91LZBURLJsRDOQH3pnBNjZBOYQKK1cQ95ZA9TNyg'
 
 @app.route('/', methods=['GET'])
 def handle_verification():
   print ("Handling Verification.")
-  if request.args.get('hub.verify_token', '') == 'my_voice_is_my_password_verify_me':
+  if request.args.get('hub.verify_token', '') == 'Hatel-is-amazingg':
     print ("Verification successful!")
     return request.args.get('hub.challenge', '')
   else:
