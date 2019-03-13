@@ -1,0 +1,32 @@
+<html>
+    <head>
+            <title>Chatbot</title>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <link rel="stylesheet" href="{{ url_for('static',filename='styles/style.css') }}">
+
+            
+
+    </head>
+    <body>
+
+    
+        <div class="mainHead">
+            <div class="head">
+                <span>Hatel</span>
+            </div>
+        </div> 
+        <div class="chat">
+            <div class="main">
+            </div>
+        </div>
+        <div class="send">
+            <!--<input type="input" class="txt1 form-cotrol">-->
+            <textarea class="form-control txt1" rows="3"></textarea>
+            <input type="button" class="btn btn1" value="SEND" onclick="sender()">
+        </div>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script src="{{ url_for('static',filename='js/app.js') }}" ></script>
+    </body>
+</html>
