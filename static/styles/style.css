@@ -73,13 +73,13 @@ body {
     background: #005816;
 }
   .txt {
-    background:#c9e1be;
+    /* background:#c9e1be; */
     padding:10px;
     position:relative;
     
   }
   .txt2 {
-    background:#A1E7ED;
+    /* background:#A1E7ED; */
     padding:10px;
     position:relative;
     
@@ -93,6 +93,10 @@ body {
     box-shadow: 1px -1px 5px #999;
     border-right: 4px solid #00303f;
   }
+
+  .txt-div:focus{
+    background:#92b383;
+  }
   
   .txt-div2 {
     background:#A1E7ED;
@@ -103,15 +107,18 @@ body {
     box-shadow: 1px 1px 5px #999;
     border-left: 4px solid #0c757e;
   }
+  .txt-div2:focus{
+    background:rgb(103, 179, 185);
+  }
   .time {
     font-size:12px;
-    background:#c9e1be;
+    /* background:#c9e1be; */
     padding:5px;
     /* border-right: 2px solid #00303f; */
   }
   .time2 {
     font-size:12px;
-    background:#A1E7ED;
+    /* background:#A1E7ED; */
     padding:5px;
     /* border-left: 2px solid #0c757e; */
   }
