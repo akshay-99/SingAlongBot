@@ -90,7 +90,7 @@ body {
     padding:5px;
     width:80%;
     float:right;
-    box-shadow: 1px -1px 5px #999;
+    box-shadow: -1px 1px 5px #999;
     border-right: 4px solid #00303f;
   }
 

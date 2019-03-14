@@ -46,6 +46,9 @@ def send_message(recipient, text, facebook=False, token=None):
 def chatbot():
     return render_template('chatbot.html')
 
+if __name__ == '__main__':
+    socketio.run(app, debug=True)
+
 # ------------------------- Facebook stuff ------------------------------------
 
 def sendfacebookmessage(recipient, text, token):
@@ -95,6 +98,5 @@ def handle_messages_fb():
         reply(msg, facebook=True)
     return "ok"
 
-if __name__ == '__main__':
-    socketio.run(app, debug=True)
+
 

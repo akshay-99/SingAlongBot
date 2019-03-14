@@ -2,12 +2,21 @@
 var sender_id=null
 var socket=null;
 $('body').ready(function() {
-    var prefix = 'https://'
+    $('#ta-msg')[0].disabled=true;
+    $('#ta-msg')[0].value="Connecting...";
+    var prefix = 'https://';
     if (location.protocol != 'https:')
     {
         prefix = 'http://'
     }
+    
     socket = io.connect(prefix + document.domain + ':' + location.port);
+    
+    socket.on('connect', ()=>{
+        $('#ta-msg')[0].disabled=false;
+        $('#ta-msg')[0].value="";
+        console.log('connected');
+    });
     socket.on( 'reply', function(msg)
     {
         res(msg.msg);
