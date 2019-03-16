@@ -20,7 +20,13 @@ session_id = '83ebfe95-d844-1525-de20-9d15059ec6a8'
 def receive_message():
     data = request.json
     replies = generate_reply(data['msg'])
-    return jsonify({'count': len(replies), 'msgs': replies })
+    text_reps = []
+    for reply in replies:
+        try:
+            text_reps.append(reply.text.text[0])
+        except:
+            pass
+    return jsonify({'count': len(replies), 'msgs': text_reps })
 
 def generate_reply(msg):
     '''
@@ -46,16 +52,70 @@ def detect_intent_texts(project_id, session_id, texts, language_code):
 
         response = session_client.detect_intent(
             session=session, query_input=query_input)
-         
-    return [response.query_result.fulfillment_text]
+    return response.query_result.fulfillment_messages
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
     req = request.json
-    return jsonify({
-        "fulfillmentText": "This is a text response"
-    })
+    intent = req['queryResult']['intent']['displayName']
+    if intent == 'cats':
+        return handle_cats(req)
+        
+    elif intent == 'bored':
+        rch = random.randint(1, 3)
+        if rch == 1:
+            reddit = requests.get('https://www.reddit.com/r/programmerhumor/top.json?t=week',  headers = {'User-agent': 'your bot 0.1'})
+            data = reddit.json()
+            rno = random.randint(0, len(data['data']['children']))-1
+            url = data['data']['children'][rno]['data']['url']
+            title = data['data']['children'][rno]['data']['title']
+            return jsonify({
+                "fulfillmentMessages": [
+                    {
+                        "text": {
+                            "text":["Here's a hilarious post I found on reddit"],
+                        }
+                    },
+                    {
+                        "text": {
+                            "text": ["<h3>"+title+"</h3><img src =\""+url+"\" width=250 height=250></img>"],
+                        }
+                    }
+                ]
+            })
+        else:
+            return jsonify({
+                "fulfillmentMessages": [
+                    {
+                        "text": {
+                            "text":["So am I"],
+                        }
+                    }
+                ]
+            })
 
+    
+def handle_cats(req):
+    reddit = requests.get('https://www.reddit.com/r/kittens/top.json?t=week',  headers = {'User-agent': 'your bot 0.1'})
+    data = reddit.json()
+    rno = random.randint(0, len(data['data']['children']))-1
+    url = data['data']['children'][rno]['data']['url']
+    title = data['data']['children'][rno]['data']['title']
+    return jsonify({
+        "fulfillmentMessages": [
+            {
+                "text": {
+                    "text":["Cats are amazing! Here's a recent reddit post"],
+                }
+            },
+            {
+                "text": {
+                    "text": ["<h3>"+title+"</h3><img src =\""+url+"\" width=250 height=250></img>"],
+                }
+            }
+        ]
+        
+    })
 # ------------------------- Facebook stuff ------------------------------------
 
 def sendfacebookmessage(recipient, text, token):
