@@ -36,7 +36,7 @@ function sender() {
 }
   
 function res(msg) {
-$('.main').append('<div class="txt-div2" ><div class="txt2 msg">'+msg+'</div><div class="time2">'+new Date().toLocaleTimeString().slice(0, -3)+'</div></div>');
+    $('.main').append('<div class="txt-div2" ><div class="txt2 msg">'+msg+'</div><div class="time2">'+new Date().toLocaleTimeString().slice(0, -3)+'</div></div>');
 }
   
 
