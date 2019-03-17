@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, render_template
 import json
 import requests
-
+from bs4 import BeautifulSoup
 import random
 import string
 
@@ -80,50 +80,58 @@ def webhook():
         return handle_cats(req)
         
     elif intent == 'bored':
-        rch = random.randint(1, 3)
-        if rch == 1:
-            reddit = requests.get('https://www.reddit.com/r/programmerhumor/top.json?t=week',  headers = {'User-agent': 'your bot 0.1'})
-            data = reddit.json()
-            rno = random.randint(0, len(data['data']['children']))-1
-            url = data['data']['children'][rno]['data']['url']
-            title = data['data']['children'][rno]['data']['title']
-            return jsonify({
-                "fulfillmentMessages": [
-                    {
-                        "text": {
-                            "text":["Here's a hilarious post I found on reddit"],
-                        }
-                    },
-                    {
-                        "text": {
-                            "text": ["<h3>"+title+"</h3><img src =\""+url+"\" width=250 height=250></img>"],
-                        }
+        return handle_bored(req)
+    elif intent == 'song - fallback':
+        return handle_song(req)
+
+def handle_song(req):
+    return jsonify({"fulfillmentMessages": [{
+                    "text": {
+                        "text":["jam"],
                     }
-                ]
-            })
-        else:
-            return jsonify({
-                "fulfillmentMessages": [
-                    {
-                        "text": {
-                            "text":["So am I"],
-                        }
+                }]
+        })
+def handle_bored(req):
+    rch = random.randint(1, 2)
+    if rch == 1:
+        reddit = requests.get('https://www.reddit.com/r/programmerhumor/top.json?t=week',  headers = {'User-agent': 'your bot 0.1'})
+        data = reddit.json()
+        rno = random.randint(0, len(data['data']['children']))-1
+        url = data['data']['children'][rno]['data']['url']
+        title = data['data']['children'][rno]['data']['title']
+        return jsonify({ "fulfillmentMessages": [{
+                    "text": {
+                        "text":["Here's a hilarious post I found on reddit"],
                     }
-                ]
-            })
+                },{
+                    "text": {
+                        "text": ["<h3>"+title+"</h3><img src =\""+url+"\" width=250 height=250></img>"],
+                    }
+                }]
+        })
+    else:
+        return jsonify({"fulfillmentMessages": [{
+                    "text": {
+                        "text":["So am I"],
+                    }
+                }]
+        })
+
 
     
 def handle_cats(req):
-    reddit = requests.get('https://www.reddit.com/r/kittens/top.json?t=week',  headers = {'User-agent': 'your bot 0.1'})
+    animal = req['queryResult']['parameters']['animals']
+    animal_dict = {'Cat':'kittens', 'Dog':'puppies','Panda':'redpandas','Rabbit':'rabbits','Horse':'horses'} 
+    reddit = requests.get('https://www.reddit.com/r/'+animal_dict[animal]+'/top.json?t=week',  headers = {'User-agent': 'your bot 0.1'})
     data = reddit.json()
-    rno = random.randint(0, len(data['data']['children']))-1
+    rno = random.randint(0, len(data['data']['children'])-1)
     url = data['data']['children'][rno]['data']['url']
     title = data['data']['children'][rno]['data']['title']
     return jsonify({
         "fulfillmentMessages": [
             {
                 "text": {
-                    "text":["Cats are amazing! Here's a recent reddit post"],
+                    "text":[animal+"s are amazing! Here's a recent reddit post"],
                 }
             },
             {
@@ -134,6 +142,16 @@ def handle_cats(req):
         ]
         
     })
+
+def getsongname(lyrics):
+    
+    r = requests.post('https://www.elyrics.net/find.php', params={'q':lyrics})
+    soup = BeautifulSoup(r.text)
+    l = soup.findall('a', attrs={'style':'font:normal 16px arial;color:#1a0dab;'})
+    print(l[0].text)
+    return l[0].text.split('-')[0].trim()
+
+
 # ------------------------- Facebook stuff ------------------------------------
 def randomstring(size):
     s = ''
