@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, render_template
 import json
 import requests
-from bs4 import BeautifulSoup
+
 import random
 import string
 
@@ -81,15 +81,33 @@ def webhook():
         
     elif intent == 'bored':
         return handle_bored(req)
-    elif intent == 'song - fallback':
-        return handle_song(req)
-
-def handle_song(req):
-    return jsonify({"fulfillmentMessages": [{
+    elif intent == 'song':
+        return jsonify({"fulfillmentMessages": [{
                     "text": {
                         "text":["jam"],
                     }
-                }]
+                }],
+                "followupEventInput": {
+                "name": "songin",
+                "languageCode": "en-US"
+                }
+        })
+    elif intent == 'songin':
+        return handle_song(req)
+        # return handle_song(req)
+
+def handle_song(req):
+    lyr = req['queryResult']['queryText']
+    songname, content = getsongname(lyr)
+    return jsonify({"fulfillmentMessages": [{
+                    "text": {
+                        "text":[content],
+                    }
+                }, {
+                    "text": {
+                        "text":[songname],
+                    }
+                }],
         })
 def handle_bored(req):
     rch = random.randint(1, 2)
@@ -144,12 +162,26 @@ def handle_cats(req):
     })
 
 def getsongname(lyrics):
-    
-    r = requests.post('https://www.elyrics.net/find.php', params={'q':lyrics})
+    from bs4 import BeautifulSoup
+    # r = requests.post('https://www.elyrics.net/find.php', params={'q':lyrics})
+    # soup = BeautifulSoup(r.text)
+    # #print(r.text)
+    # # print(soup)
+    # l = soup.find_all('a', attrs={'style':'font:normal 16px arial;color:#1a0dab;'})
+    # print(l[0].text)
+    # return l[0].text.split('-')[0][:-7]
+    r = requests.get('https://songsear.ch/q/'+lyrics)
     soup = BeautifulSoup(r.text)
-    l = soup.findall('a', attrs={'style':'font:normal 16px arial;color:#1a0dab;'})
-    print(l[0].text)
-    return l[0].text.split('-')[0].trim()
+    l = soup.find_all('h2', attrs={'title':'Click to view just this song'})
+    li =soup.find_all('div', attrs={'class':'fragments'})
+    print((l[0].find('a').text.split('(')[0], str(li[0].find('p')).split('</mark>')[-1][:-4].replace('\n', '')))
+    re = str(li[0].find('p')).split('</mark>')[-1][:-4].replace('\n', '').split('..')[0]
+    rer = re[0]
+    for e in re[1:]:
+        if e in string.ascii_uppercase:
+            break
+        rer+=e
+    return l[0].find('a').text.split('(')[0], rer
 
 
 # ------------------------- Facebook stuff ------------------------------------
