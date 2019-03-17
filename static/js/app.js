@@ -1,5 +1,5 @@
 
-var sender_id=null
+var session_id=0
 var socket=null;
 $('body').ready(function() {
     
@@ -11,7 +11,7 @@ function sender() {
     $('.txt1').val('');
     $('.chat').scrollTop = $('.chat').scrollHeight;
     url = '/send';
-    tosend = {msg: msg};
+    tosend = {msg: msg, sid:session_id};
     fetch(url, {
         method: 'POST',
         headers: {
@@ -22,6 +22,7 @@ function sender() {
     }).then(response=>response.json())
     .then(json => {
         msgs = json.msgs;
+        session_id= json.sid
         console.log(msgs);
         msgs.forEach(res);
     });

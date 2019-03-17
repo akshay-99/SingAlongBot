@@ -5,6 +5,8 @@ import requests
 import random
 import string
 
+from protobuf_to_dict import protobuf_to_dict
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'ghrg4854yn754ct5cvrtgtAS'
 
@@ -13,27 +15,27 @@ print('rerun')
 
 randomspace = string.ascii_letters+'0123456789'
 project_id = 'test-chatbot-53656'
-session_id = '83ebfe95-d844-1525-de20-9d15059ec6a8'
+# session_id = '83ebfe95-d844-1525-de20-9d15059ec6a8'
 
 
 @app.route('/send',methods=['POST'])
 def receive_message():
     data = request.json
-    replies = generate_reply(data['msg'])
-    text_reps = []
-    for reply in replies:
-        try:
-            text_reps.append(reply.text.text[0])
-        except:
-            pass
-    return jsonify({'count': len(replies), 'msgs': text_reps })
+    if not data.get('sid'):
+        sid = randomstring(32)
+        reply = generate_reply(data['msg'], sid)
+    else:
+        reply = generate_reply(data['msg'], data['sid'])
 
-def generate_reply(msg):
+    return jsonify(reply)
+
+def generate_reply(msg, sid):
     '''
     Process and reply
     '''
-    replies = detect_intent_texts(project_id, session_id, [msg], 'en')
-    return replies
+    reply = detect_intent_texts(project_id, sid, [msg], 'en')
+    
+    return reply
 
 @app.route('/chatbot')
 def chatbot():
@@ -52,7 +54,23 @@ def detect_intent_texts(project_id, session_id, texts, language_code):
 
         response = session_client.detect_intent(
             session=session, query_input=query_input)
-    return response.query_result.fulfillment_messages
+    
+    reply = protobuf_to_dict(response.query_result)
+    print(reply)
+    messages = []
+    output_contexts = []
+    for rep in reply['fulfillment_messages']:
+        if 'text' in rep:
+            messages.append(rep['text']['text'])
+    # if 'output_contexts' in reply:
+    #     for con in reply['output_contexts']:
+    #         output_contexts.append(con)
+    replyformatted = {
+        'msgs':messages,
+        # 'output_contexts':output_contexts,
+        'sid': session_id
+    }
+    return replyformatted
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
@@ -117,7 +135,11 @@ def handle_cats(req):
         
     })
 # ------------------------- Facebook stuff ------------------------------------
-
+def randomstring(size):
+    s = ''
+    for i in range(size):
+        s+=randomspace[random.randint(0, len(randomspace)-1)]
+    return s
 def sendfacebookmessage(recipient, text, token):
     r = requests.post("https://graph.facebook.com/v2.6/me/messages",
         params={"access_token": token},
