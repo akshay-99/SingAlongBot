@@ -1,22 +1,24 @@
 from flask import Flask, request, jsonify, render_template
 import json
 import requests
-
+import os
 import random
 import string
 
 from protobuf_to_dict import protobuf_to_dict
 
-app = Flask(__name__)
-app.config['SECRET_KEY'] = 'ghrg4854yn754ct5cvrtgtAS'
+from bs4 import BeautifulSoup
+from collections import Counter
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
-PAT = 'EAAElanWHWs0BAGrlESwCtGH6C4ZAtfGtINDVPgcWiuUQo3ZAeY0O7H4ic1b1lPmVgcmqpjYPxom0V80cZBD4K5tvdaiwQB3dnFVUvZAgJQlSo1rLEmxHH8Ojuq1LAkoyM300upWo9HZAlRNO91LZBURLJsRDOQH3pnBNjZBOYQKK1cQ95ZA9TNyg'
-print('rerun')
+app = Flask(__name__)
+app.config['SECRET_KEY'] = ''
+
+PAT = ''
 
 randomspace = string.ascii_letters+'0123456789'
 project_id = 'test-chatbot-53656'
-# session_id = '83ebfe95-d844-1525-de20-9d15059ec6a8'
-
 
 @app.route('/send',methods=['POST'])
 def receive_message():
@@ -37,9 +39,7 @@ def generate_reply(msg, sid):
     
     return reply
 
-@app.route('/chatbot')
-def chatbot():
-    return render_template('chatbot.html')
+
 
 # ------------------------- calls to and from Dialog flow ------------------------------
 def detect_intent_texts(project_id, session_id, texts, language_code):
@@ -62,12 +62,9 @@ def detect_intent_texts(project_id, session_id, texts, language_code):
     for rep in reply['fulfillment_messages']:
         if 'text' in rep:
             messages.append(rep['text']['text'])
-    # if 'output_contexts' in reply:
-    #     for con in reply['output_contexts']:
-    #         output_contexts.append(con)
+
     replyformatted = {
         'msgs':messages,
-        # 'output_contexts':output_contexts,
         'sid': session_id
     }
     return replyformatted
@@ -105,7 +102,7 @@ def handle_song(req):
                     }
                 }, {
                     "text": {
-                        "text":[songname],
+                        "text":[songname+'! I love this song!'],
                     }
                 }],
         })
@@ -162,28 +159,79 @@ def handle_cats(req):
     })
 
 def getsongname(lyrics):
-    from bs4 import BeautifulSoup
-    # r = requests.post('https://www.elyrics.net/find.php', params={'q':lyrics})
-    # soup = BeautifulSoup(r.text)
-    # #print(r.text)
-    # # print(soup)
-    # l = soup.find_all('a', attrs={'style':'font:normal 16px arial;color:#1a0dab;'})
-    # print(l[0].text)
-    # return l[0].text.split('-')[0][:-7]
-    r = requests.get('https://songsear.ch/q/'+lyrics)
-    soup = BeautifulSoup(r.text)
-    l = soup.find_all('h2', attrs={'title':'Click to view just this song'})
-    li =soup.find_all('div', attrs={'class':'fragments'})
-    print((l[0].find('a').text.split('(')[0], str(li[0].find('p')).split('</mark>')[-1][:-4].replace('\n', '')))
-    re = str(li[0].find('p')).split('</mark>')[-1][:-4].replace('\n', '').split('..')[0]
-    rer = re[0]
-    for e in re[1:]:
-        if e in string.ascii_uppercase:
-            break
-        rer+=e
-    return l[0].find('a').text.split('(')[0], rer
+    
+    try:
+       
+        r2 = requests.get('https://www.googleapis.com/customsearch/v1/siterestrict?q='+lyrics +
+                          '&cx={}&num=1&key={}'.format(os.environ.get('CSE_CX'), os.environ.get('CSE_KEY')))
+        print('here 1,1')
+        d = eval(r2.text)
+        url2 = d['items'][0]['link']
+        print('here 1,2')
+        title = d['items'][0]['pagemap']['metatags'][0]['og:title']
 
+        #scrape first search result
+        t = requests.get(url2).text
+        soup = BeautifulSoup(t)
+        song = soup.find_all('div', attrs={'class': 'lyrics'})[
+            0].find('p').text
+        lines = song.split('\n')
+        lines = [i for i in lines if (i != '' and i[0] != '[')]
+        lno = matches(lyrics, lines)
+        print('here 1,3')
+        print(len(lines))
+        if lno >= len(lines):
+            conti = '...'
+        else:
+            conti = lines[lno+1]
+        # title = soup.find_all('h1', attrs={'class':'header_with_cover_art-primary_info-title'})[0].text.split('(')[0]
+        print('1 runs')
+    except:
+        r = requests.get('https://songsear.ch/q/'+lyrics)
+        soup = BeautifulSoup(r.text)
+        l = soup.find_all(
+            'h2', attrs={'title': 'Click to view just this song'})
+        li = soup.find_all('div', attrs={'class': 'fragments'})
+        print((l[0].find('a').text.split('(')[0], str(
+            li[0].find('p')).split('</mark>')[-1][:-4].replace('\n', '')))
+        re = str(li[0].find('p')).split(
+            '</mark>')[-1][:-4].replace('\n', '').split('..')[0]
+        rer = re[0]
+        for e in re[1:]:
+            if e in string.ascii_uppercase and e != 'I':
+                break
+            rer += e
+        title = l[0].find('a').text.split('(')[0]
+        conti = rer
+        print('2 runs')
 
+    print('title', title)
+    print('conti', conti)
+    return title, conti
+
+def get_cosine_sim(*strs): 
+    vectors = [t for t in get_vectors(*strs)]
+    return cosine_similarity(vectors)
+    
+def get_vectors(*strs):
+    text = [t for t in strs]
+    vectorizer = CountVectorizer(text)
+    vectorizer.fit(text)
+    return vectorizer.transform(text).toarray()
+def matches(inp, lines):
+    inp = inp.lower()
+    inp = inp.translate(str.maketrans('', '', string.punctuation))
+    gcls = []
+    count = 0
+    for line in lines:
+        line = line.lower()
+        line = line.translate(str.maketrans('', '', string.punctuation))
+        gcl = get_cosine_sim(line, inp)[0,1]
+        gcls.append(int(gcl*1000000))
+        # print('START', count,' :\n', line, '\n', gcl, end='\n\n')
+        count+=1
+    print(gcls.index(max(gcls)))
+    return gcls.index(max(gcls))
 # ------------------------- Facebook stuff ------------------------------------
 def randomstring(size):
     s = ''
@@ -214,28 +262,9 @@ def messaging_events(payload):
         else:
             yield event["sender"]["id"], "I can't echo this"
 
-@app.route('/', methods=['GET'])
-def handle_verification():
-    print ("Handling Verification.")
-    if request.args.get('hub.verify_token', '') == 'Hatel-is-amazingg':
-        print ("Verification successful!")
-        return request.args.get('hub.challenge', '')
-    else:
-        print ("Verification failed!")
-        return 'Error, wrong validation token'
-
-@app.route('/', methods=['POST'])
-def handle_messages_fb():
-    print ("Handling Messages")
-    payload = request.get_data()
-    print (payload)
-    
-    for sender, message in messaging_events(payload):
-        print ("Incoming from %s: %s" % (sender, message))
-        # send_message(PAT, sender, message)
-        
-        sendfacebookmessage(sender, message, PAT)
-    return "ok"
+@app.route('/')
+def chatbot():
+    return render_template('chatbot.html')
 
 
 if __name__ == '__main__':
